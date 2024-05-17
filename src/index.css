@@ -5,6 +5,7 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(rgb(255,255,255,0.4), rgb(255,255,255,0.4)), url(./resources/images/boston-public-library-4AQF0MIp9vc-unsplash.jpg) center/cover fixed;
 }
 
 code {
