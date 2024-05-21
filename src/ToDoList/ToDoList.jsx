@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import {format} from "date-fns";
+import axios from "axios";
 import trashbox from "../resources/images/trashbox.svg";
 import add from "../resources/images/add.svg";
+
+const serverUrl = "http://localhost:3001/tasks";//адрес сервера
 
 const ToDoList = () => {
     const [todos, setTodos] = useState([]); //массив задач(изначально пустой)
@@ -9,20 +12,17 @@ const ToDoList = () => {
     const [priority, setPriority] = useState("Low"); //приоритет, по умолчнаю низкий
     const [deadline, setDeadline] = useState(""); //дэдлайн
 
-    //сработает один раз при запуске компонента
-    //загрузка задач из localStorage
+    //загрузка данных из Бд при запускее компонента, запись в Бд при изменении массива todos
     useEffect(() => {
-        const savedTodos = localStorage.getItem("todos");
-        if (savedTodos) {
-            setTodos(JSON.parse(savedTodos));
+        const fetchData = async() => {
+            try {
+                const response = await axios.get(serverUrl);
+                setTodos(response.data);
+            } catch (error) {
+                console.error("Ошибка получения списка задач: ", error);
+            }
         }
-    }, []);
-
-    //запись в localStorage при изменении массива todos
-    useEffect(() => {
-        if (todos.length > 0) {
-            localStorage.setItem("todos", JSON.stringify(todos));
-        }
+        fetchData();
     }, [todos]);
 
     //значение состояния inputValue меняется при изменении в поле ввода
@@ -42,19 +42,23 @@ const ToDoList = () => {
 
     //добавление новой задачи
     //обрезка лишних символов, добавление в массив todos, очистка полей ввода
-    const handleAddTodo = () => {
-        if (inputValue.trim() !== "") {
-            setTodos([...todos, {name: inputValue, priority: priority, deadline: deadline}]);
+    const handleAddTodo = async() => {
+        try {
+            const response = await axios.post(serverUrl, {title: inputValue, deadline: deadline, priority: priority});
+            console.log("Задача добавлена: ", response.data);
             setInputValue("");
             setPriority("Low");
             setDeadline("");
+        } catch (error) {
+            console.error("Ошибка добавления задачи: ", error);
         }
     };
 
     //удаление задачи
-    const handleDeleteTodo = (index) => {
+    const handleDeleteTodo = async(id) => {
+        await axios.delete(`${serverUrl}/${id}`);
         //выбираем те задачи, которые не должны удаляться в новый массив
-        const newTodos = todos.filter((todo, i) => i !== index);
+        const newTodos = todos.filter((todo) => todo.id !== id);
         setTodos(newTodos);
     };
 
@@ -130,14 +134,14 @@ const ToDoList = () => {
                     </tr>
                 </thead>
                 <tbody>
-                    {todos.map((todo, index) => (
-                        <tr key={index} className={getPriorityColor(todo.priority)}>
-                            <td className="fw-bold" style={{width: "60%"}}>{todo.name}</td>
+                    {todos.map((todo) => (
+                        <tr key={todo.id} className={getPriorityColor(todo.priority)}>
+                            <td className="fw-bold" style={{width: "60%"}}>{todo.title}</td>
                             <td className="text-center">{getFormattedDateTime(todo.deadline)}</td>
                             <td className="text-center">
                                 <button
                                     className="btn btn-danger"
-                                    onClick={() => handleDeleteTodo(index)}
+                                    onClick={() => handleDeleteTodo(todo.id)}
                                 >
                                     <img src={trashbox} alt="trashbox" />
                                 </button>
