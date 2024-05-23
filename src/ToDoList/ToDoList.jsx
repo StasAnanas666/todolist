@@ -4,7 +4,8 @@ import axios from "axios";
 import trashbox from "../resources/images/trashbox.svg";
 import add from "../resources/images/add.svg";
 import edit from "../resources/images/edit.svg";
-import EditTaskModal from "./EditTaskModal";
+import EditTaskModal from "./Modal/EditTaskModal";
+import TaskDetailsModal from "./Modal/TaskDetailsModal";
 
 const serverUrl = "http://localhost:3001/tasks"; //адрес сервера
 
@@ -63,6 +64,11 @@ const ToDoList = () => {
 
     //открытие модального окна для выбранной задачи
     const handleEdit = (todo) => {
+        setSelectedTask(todo);
+    };
+
+    //открытие модального окна с подробной информацией при клике на задачу
+    const handleTaskClick = (todo) => {
         setSelectedTask(todo);
     };
 
@@ -202,6 +208,12 @@ const ToDoList = () => {
                     onClose={() => setSelectedTask(null)}
                 />
             )}
+            {/* {selectedTask && (
+                <TaskDetailsModal 
+                    task={selectedTask}
+                    onClose={() => setSelectedTask(null)}
+                />
+            )} */}
 
         </div>
     );
