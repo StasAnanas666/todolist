@@ -30,6 +30,19 @@ app.post("/tasks", (req, res) => {
     })
 })
 
+//изменение задачи
+app.put("/tasks/:id", (req, res) => {
+    const {id} = req.params;
+    console.log(id);
+    const {title, deadline, priority} = req.body;
+    db.run("update tasks set title = ?, deadline = ?, priority = ? where id = ?", [title, deadline, priority, id], (err) => {
+        if(err) {
+            return res.status(500).json({error: err.message});
+        }
+        res.json({id, title, deadline, priority});
+    })
+})
+
 //удаление задачи
 app.delete("/tasks/:id", (req, res) => {
     const {id} = req.params;

@@ -1,27 +1,30 @@
 import { useState, useEffect } from "react";
-import {format} from "date-fns";
+import { format } from "date-fns";
 import axios from "axios";
 import trashbox from "../resources/images/trashbox.svg";
 import add from "../resources/images/add.svg";
+import edit from "../resources/images/edit.svg";
+import EditTaskModal from "./EditTaskModal";
 
-const serverUrl = "http://localhost:3001/tasks";//адрес сервера
+const serverUrl = "http://localhost:3001/tasks"; //адрес сервера
 
 const ToDoList = () => {
     const [todos, setTodos] = useState([]); //массив задач(изначально пустой)
     const [inputValue, setInputValue] = useState(""); //вводимое название задачи
     const [priority, setPriority] = useState("Low"); //приоритет, по умолчнаю низкий
     const [deadline, setDeadline] = useState(""); //дэдлайн
+    const [selectedTask, setSelectedTask] = useState(null); //выбранная задача
 
     //загрузка данных из Бд при запускее компонента, запись в Бд при изменении массива todos
     useEffect(() => {
-        const fetchData = async() => {
+        const fetchData = async () => {
             try {
                 const response = await axios.get(serverUrl);
                 setTodos(response.data);
             } catch (error) {
                 console.error("Ошибка получения списка задач: ", error);
             }
-        }
+        };
         fetchData();
     }, [todos]);
 
@@ -42,9 +45,13 @@ const ToDoList = () => {
 
     //добавление новой задачи
     //обрезка лишних символов, добавление в массив todos, очистка полей ввода
-    const handleAddTodo = async() => {
+    const handleAddTodo = async () => {
         try {
-            const response = await axios.post(serverUrl, {title: inputValue, deadline: deadline, priority: priority});
+            const response = await axios.post(serverUrl, {
+                title: inputValue,
+                deadline: deadline,
+                priority: priority,
+            });
             console.log("Задача добавлена: ", response.data);
             setInputValue("");
             setPriority("Low");
@@ -54,8 +61,31 @@ const ToDoList = () => {
         }
     };
 
+    //открытие модального окна для выбранной задачи
+    const handleEdit = (todo) => {
+        setSelectedTask(todo);
+    };
+
+    //изменение задачи
+    const handleUpdate = async (updatedTodo) => {
+        try {
+            const response = await axios.put(
+                `${serverUrl}/${updatedTodo.id}`,
+                {title: updatedTodo.title, priority: updatedTodo.priority, deadline: updatedTodo.deadline}
+            );
+            setTodos(
+                todos.map((todo) =>
+                    todo.id === updatedTodo.id ? response.data : todo
+                )
+            );
+            setSelectedTask(null);
+        } catch (error) {
+            console.error("Ошибка изменения задачи: ", error);
+        }
+    };
+
     //удаление задачи
-    const handleDeleteTodo = async(id) => {
+    const handleDeleteTodo = async (id) => {
         await axios.delete(`${serverUrl}/${id}`);
         //выбираем те задачи, которые не должны удаляться в новый массив
         const newTodos = todos.filter((todo) => todo.id !== id);
@@ -78,10 +108,11 @@ const ToDoList = () => {
 
     //получение форматированной даты и времени
     const getFormattedDateTime = (datetime) => {
-        const formattedDateTime = datetime ? format(new Date(datetime), "dd/MM/yyyy HH:mm") : "";
+        const formattedDateTime = datetime
+            ? format(new Date(datetime), "dd/MM/yyyy HH:mm")
+            : "";
         return formattedDateTime;
-    }
-
+    };
 
     return (
         <div className="container">
@@ -135,10 +166,23 @@ const ToDoList = () => {
                 </thead>
                 <tbody>
                     {todos.map((todo) => (
-                        <tr key={todo.id} className={getPriorityColor(todo.priority)}>
-                            <td className="fw-bold" style={{width: "60%"}}>{todo.title}</td>
-                            <td className="text-center">{getFormattedDateTime(todo.deadline)}</td>
+                        <tr
+                            key={todo.id}
+                            className={getPriorityColor(todo.priority)}
+                        >
+                            <td className="fw-bold" style={{ width: "60%" }}>
+                                {todo.title}
+                            </td>
                             <td className="text-center">
+                                {getFormattedDateTime(todo.deadline)}
+                            </td>
+                            <td className="text-center">
+                                <button
+                                    className="btn btn-warning me-3"
+                                    onClick={() => handleEdit(todo)}
+                                >
+                                    <img src={edit} alt="edit" />
+                                </button>
                                 <button
                                     className="btn btn-danger"
                                     onClick={() => handleDeleteTodo(todo.id)}
@@ -151,21 +195,14 @@ const ToDoList = () => {
                 </tbody>
             </table>
 
-            {/* <ul className="list-group mt-5">
-                {todos.map((todo, index) => (
-                    <li className="list-group-item" key={index}>
-                        <div className="d-flex justify-content-between align-items-center">
-                            <span>{todo}</span>
-                            <button
-                                className="btn btn-danger"
-                                onClick={() => handleDeleteTodo(index)}
-                            >
-                                <img src={trashbox} alt="trashbox" />
-                            </button>
-                        </div>
-                    </li>
-                ))}
-            </ul> */}
+            {selectedTask && (
+                <EditTaskModal 
+                    task={selectedTask}
+                    onUpdate={handleUpdate}
+                    onClose={() => setSelectedTask(null)}
+                />
+            )}
+
         </div>
     );
 };
